@@ -1,5 +1,3 @@
-[... existing tests remain ...]
-
 Clarinet.test({
   name: "Security and validation tests",
   async fn(chain: Chain, accounts: Map<string, Account>) {
@@ -17,11 +15,22 @@ Clarinet.test({
     
     block.receipts[0].result.expectErr().expectUint(100); // err-owner-only
     
+    // Test points validation
+    block = chain.mineBlock([
+      Tx.contractCall('eco-tracker', 'award-achievement', [
+        types.principal(wallet1.address),
+        types.ascii("Too Many Points"),
+        types.uint(1001)
+      ], deployer.address)
+    ]);
+    
+    block.receipts[0].result.expectErr().expectUint(106); // err-invalid-points
+    
     // Test invalid date validation
     block = chain.mineBlock([
       Tx.contractCall('eco-tracker', 'record-monthly-metrics', [
         types.uint(2023),
-        types.uint(13), // invalid month
+        types.uint(13),
         types.uint(1000),
         types.uint(500)
       ], wallet1.address)
