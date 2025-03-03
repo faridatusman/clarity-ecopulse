@@ -8,12 +8,11 @@
 (define-constant err-invalid-goal (err u103))
 (define-constant err-invalid-date (err u104))
 (define-constant err-list-full (err u105))
+(define-constant err-invalid-points (err u106))
+(define-constant max-points-per-achievement u1000)
 
 ;; Data Variables 
 (define-data-var total-organizations uint u0)
-
-;; Data Maps
-[... remaining maps stay the same ...]
 
 ;; Helper functions
 (define-private (validate-date (month uint) (year uint))
@@ -25,6 +24,10 @@
   )
 )
 
+(define-private (validate-points (points uint))
+  (<= points max-points-per-achievement)
+)
+
 (define-private (can-append-achievement (achievement-data {
   milestones: (list 10 (string-ascii 100)),
   dates: (list 10 uint),
@@ -33,12 +36,11 @@
   (< (len (get milestones achievement-data)) u10)
 )
 
-;; Modified public functions
-
-;; Award achievement (now owner-only)
+;; Award achievement with enhanced validation
 (define-public (award-achievement (org principal) (milestone (string-ascii 100)) (points uint))
   (begin
     (asserts! (is-eq tx-sender contract-owner) err-owner-only)
+    (asserts! (validate-points points) err-invalid-points)
     (let
       (
         (org-data (unwrap! (map-get? organizations org) err-not-found))
@@ -59,25 +61,6 @@
         )
         (ok true)
       )
-    )
-  )
-)
-
-;; Record monthly metrics with validation
-(define-public (record-monthly-metrics (year uint) (month uint) (energy uint) (waste uint))
-  (begin
-    (asserts! (validate-date month year) err-invalid-date)
-    (let
-      (
-        (org-data (unwrap! (map-get? organizations tx-sender) err-not-found))
-        (metrics {
-          energy-usage: energy,
-          waste-produced: waste,
-          goals-met: u0
-        })
-        (goals (map-get? sustainability-goals tx-sender))
-      )
-      [... rest of function remains the same ...]
     )
   )
 )
